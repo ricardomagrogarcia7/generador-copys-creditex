@@ -223,7 +223,7 @@ ${!isNT ? "- Máximo 2 emojis por copy (solo los aprobados por la marca)" : "- S
       setError("Error al generar: " + err.message);
       setStep("config");
     }
-  }, [brand, subbrand, objective, brief, imageBase64, geminiKey, currentBrand]);
+  }, [brand, subbrand, objective, brief, imageBase64, currentBrand]);
 
   // ─── UI ───────────────────────────────────────────────────────────────────
   const brandStyle = {
