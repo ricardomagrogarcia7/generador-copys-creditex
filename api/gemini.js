@@ -45,15 +45,17 @@ OBJETIVO: ${objectiveLabel}
 ${brief ? `BRIEF ADICIONAL:\n${brief}` : ''}
 ${imageBase64 ? 'Se adjunta el creativo publicitario. Analiza las prendas, colores, mood, ocasión de uso y público objetivo que transmite la imagen para enriquecer los copys.' : ''}
 
-Responde ÚNICAMENTE con un JSON válido, sin texto adicional, sin markdown, sin bloques de código. Solo el JSON:
+INSTRUCCIÓN CRÍTICA: Responde ÚNICAMENTE con el objeto JSON. Sin texto antes ni después. Sin bloques markdown. Sin comillas triples. Solo el JSON puro empezando con { y terminando con }.
+
+Estructura exacta a seguir:
 ${jsonSchema}
 
-REGLAS CRÍTICAS:
-- Las primeras 125 caracteres del texto_primario deben contener el gancho + info clave antes del "ver más"
+REGLAS:
+- Primeras 125 caracteres del texto_primario = gancho + info clave antes del "ver más"
 ${!isNT ? '- Máximo 2 emojis por copy (solo los aprobados por la marca)' : '- SIN emojis. SIN CTA.'}
 - CTA máximo 3 palabras, sin puntuación
-- Hashtags relevantes a la campaña al final
-- Respetar estrictamente el tono y vocabulario de la marca`
+- Hashtags relevantes al final
+- Respetar tono y vocabulario de la marca`
 
     const parts = []
     if (imageBase64) {
@@ -68,7 +70,11 @@ ${!isNT ? '- Máximo 2 emojis por copy (solo los aprobados por la marca)' : '- S
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           contents: [{ parts }],
-          generationConfig: { temperature: 0.9, maxOutputTokens: 2048 },
+          generationConfig: {
+            temperature: 0.85,
+            maxOutputTokens: 4096,
+            responseMimeType: 'application/json',
+          },
         }),
       }
     )
@@ -80,8 +86,15 @@ ${!isNT ? '- Máximo 2 emojis por copy (solo los aprobados por la marca)' : '- S
 
     const data = await geminiRes.json()
     const rawText = data?.candidates?.[0]?.content?.parts?.[0]?.text || ''
-    const clean = rawText.replace(/```json|```/g, '').trim()
-    const parsed = JSON.parse(clean)
+
+    // Extraer JSON robusto: buscar primer { y último }
+    const firstBrace = rawText.indexOf('{')
+    const lastBrace = rawText.lastIndexOf('}')
+    if (firstBrace === -1 || lastBrace === -1) {
+      throw new Error('Gemini no devolvió un JSON válido')
+    }
+    const jsonStr = rawText.slice(firstBrace, lastBrace + 1)
+    const parsed = JSON.parse(jsonStr)
 
     return new Response(JSON.stringify({ result: parsed }), {
       status: 200,
