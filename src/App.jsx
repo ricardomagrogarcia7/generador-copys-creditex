@@ -209,11 +209,16 @@ export default function GeneradorCopys() {
 
       if (!res.ok) {
         const errData = await res.json().catch(() => ({}));
-        throw new Error(errData?.error || `Error ${res.status}`);
+        const errMsg = typeof errData?.error === 'string'
+          ? errData.error
+          : errData?.error?.message || `Error ${res.status}`;
+        throw new Error(errMsg);
       }
 
       const data = await res.json();
-      if (data.error) throw new Error(data.error);
+      if (data.error) {
+        throw new Error(typeof data.error === 'string' ? data.error : data.error?.message || 'Error desconocido');
+      }
 
       setResults(data.result);
       setStep("results");
